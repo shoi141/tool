@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lindor 買いどき判定</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Georgia,'Times New Roman',serif;
+  background:#faf8f5;
+  color:#1a1a1a;
+  min-height:100vh;
+  padding:0 0 3rem;
+}
+.page{max-width:480px;margin:0 auto;padding:0 16px}
+
+/* header */
+.hd{text-align:center;padding:2rem 0 1.5rem}
+.hd-logo{font-size:10px;letter-spacing:.3em;color:#993C1D;font-family:sans-serif;text-transform:uppercase;margin-bottom:6px}
+.hd-title{font-size:22px;font-weight:500;color:#1a1a1a;margin-bottom:6px}
+.hd-rule{width:36px;height:1px;background:#993C1D;margin:8px auto}
+.hd-sub{font-size:12px;color:#777;font-family:sans-serif}
+
+/* cards */
+.card{background:#fff;border:1px solid #e8e3dc;border-radius:14px;padding:16px;margin-bottom:14px}
+.card-label{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.badge{font-size:10px;font-family:sans-serif;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:4px}
+.badge-other{background:#FEF3E2;color:#854F0B;border:1px solid #F5C878}
+.card-sub{font-size:12px;color:#888;font-family:sans-serif}
+
+/* mode tabs */
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tab{flex:1;font-size:12px;font-family:sans-serif;padding:10px 6px;border-radius:10px;border:1px solid #ddd;background:#f5f3ef;color:#888;cursor:pointer;text-align:center;line-height:1.5;-webkit-tap-highlight-color:transparent;transition:all .15s}
+.tab.active{background:#FEF3E2;color:#854F0B;border-color:#F5C878;font-weight:600}
+
+/* input rows */
+.irow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.irow input{
+  width:96px;height:48px;font-size:18px;font-weight:600;
+  font-family:sans-serif;text-align:center;
+  border:1.5px solid #ddd;border-radius:10px;
+  background:#faf8f5;color:#1a1a1a;
+  -webkit-appearance:none;appearance:none;
+  transition:border-color .15s;
+}
+.irow input:focus{outline:none;border-color:#993C1D;background:#fff}
+.irow .sep{font-size:13px;color:#999;font-family:sans-serif;white-space:nowrap}
+
+/* result */
+.res{border-radius:14px;padding:18px 16px;text-align:center;border:1px solid #e8e3dc;background:#f5f3ef;transition:all .3s;margin-bottom:14px}
+.res.buy{border-color:#0F6E56;border-width:2px;background:#EBF8F3}
+.res.pass{border-color:#993C1D;border-width:2px;background:#FBF0EE}
+.res-verdict{font-size:28px;font-weight:500;margin-bottom:4px;font-family:Georgia,serif}
+.res-verdict.buy{color:#0F6E56}
+.res-verdict.pass{color:#993C1D}
+.res-verdict.same{color:#555}
+.res-diff{font-size:13px;font-family:sans-serif;color:#666;margin-bottom:14px}
+.res-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.rc{background:#fff;border:1px solid #e8e3dc;border-radius:8px;padding:8px 4px;text-align:center;font-family:sans-serif}
+.rc .rl{font-size:10px;color:#aaa;margin-bottom:3px}
+.rc .rv{font-size:14px;font-weight:600;color:#1a1a1a}
+.rc.best .rv{color:#0F6E56}
+.rc.worse .rv{color:#993C1D}
+.empty-hint{font-size:13px;font-family:sans-serif;color:#aaa;font-style:italic;padding:6px 0}
+
+/* collapsible advanced */
+.adv-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;background:none;border:none;
+  font-family:sans-serif;font-size:12px;color:#999;
+  padding:10px 16px;cursor:pointer;border-radius:10px;
+  -webkit-tap-highlight-color:transparent;
+}
+.adv-toggle:hover{background:#f0ece6}
+.adv-arrow{transition:transform .2s;font-size:10px}
+.adv-arrow.open{transform:rotate(180deg)}
+.adv-body{display:none;padding:0 4px 4px}
+.adv-body.open{display:block}
+
+/* preset card inside adv */
+.preset-card{background:#f5f3ef;border:1px solid #e8e3dc;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.preset-note{font-size:11px;font-family:sans-serif;color:#aaa;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.preset-row{display:flex;align-items:center;gap:8px}
+.preset-row input{
+  width:80px;height:40px;font-size:15px;font-family:sans-serif;
+  text-align:center;border:1px solid #ddd;border-radius:8px;
+  background:#fff;color:#888;
+}
+.preset-row input:focus{outline:none;border-color:#993C1D;color:#1a1a1a}
+.preset-row select{
+  height:40px;font-family:sans-serif;font-size:13px;
+  border:1px solid #ddd;border-radius:8px;background:#fff;color:#555;padding:0 8px;
+}
+.preset-edit-note{font-size:11px;font-family:sans-serif;color:#bbb;margin-top:6px;font-style:italic}
+
+.gw-row{display:flex;align-items:center;gap:10px;font-family:sans-serif;font-size:12px;color:#aaa}
+.gw-row input{
+  width:60px;height:36px;font-size:13px;text-align:center;
+  border:1px solid #ddd;border-radius:8px;background:#fff;color:#555;
+  font-family:sans-serif;
+}
+.gw-row input:focus{outline:none;border-color:#993C1D}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hd">
+    <p class="hd-logo">Lindt &bull; Lindor</p>
+    <p class="hd-title">買いどき判定</p>
+    <div class="hd-rule"></div>
+    <p class="hd-sub">他店の値段を入力するだけ</p>
+  </div>
+
+  <!-- 他店舗入力 -->
+  <div class="card">
+    <div class="card-label">
+      <span class="badge badge-other">他店舗</span>
+      <span class="card-sub">ドンキ・コンビニ・スーパーなど</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-g" onclick="setMode('g')">●●g の袋が<br>●●円(税込)</button>
+      <button class="tab" id="tab-p" onclick="setMode('p')">●●個入りが<br>●●円(税込)</button>
+    </div>
+    <div id="input-g" class="irow">
+      <input type="number" id="og" placeholder="150" min="0" inputmode="numeric" oninput="calc()" />
+      <span class="sep">g の袋が</span>
+      <input type="number" id="ogp" placeholder="398" min="0" inputmode="numeric" oninput="calc()" />
+      <span class="sep">円(税込)</span>
+    </div>
+    <div id="input-p" class="irow" style="display:none">
+      <input type="number" id="opc" placeholder="6" min="1" inputmode="numeric" oninput="calc()" />
+      <span class="sep">個入りが</span>
+      <input type="number" id="opp2" placeholder="798" min="0" inputmode="numeric" oninput="calc()" />
+      <span class="sep">円(税込)</span>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="res" id="res">
+    <p class="empty-hint">上に値段を入力すると判定が出ます</p>
+  </div>
+
+  <!-- 詳細設定 (折りたたみ) -->
+  <button class="adv-toggle" onclick="toggleAdv()">
+    <span>詳細設定（公式価格・1粒の重さ）</span>
+    <span class="adv-arrow" id="adv-arrow">▼</span>
+  </button>
+  <div class="adv-body" id="adv-body">
+
+    <!-- 直営店プリセット -->
+    <div class="preset-card">
+      <p class="preset-note">
+        🔒 公式価格（2025年1月改定）・変更可
+      </p>
+      <div class="preset-row">
+        <input type="number" id="lp" value="1440" min="0" step="1" inputmode="numeric" />
+        <span style="font-size:13px;color:#999">円</span>
+        <select id="lu">
+          <option value="100g" selected>/ 100g</option>
+          <option value="g">/ g</option>
+          <option value="piece">/ 個</option>
+        </select>
+      </div>
+      <p class="preset-edit-note">量り売り 100g = 1,440円 / 1粒 ≈ 180円</p>
+    </div>
+
+    <!-- 1粒の重さ -->
+    <div class="gw-row">
+      <span>1粒の重さ</span>
+      <input type="number" id="gpg" value="12.5" min="1" max="50" step="0.1" inputmode="decimal" oninput="calc()" onchange="calc()" />
+      <span>g（公式目安）</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var mode='g';
+
+function setMode(m){
+  mode=m;
+  document.getElementById('tab-g').className='tab'+(m==='g'?' active':'');
+  document.getElementById('tab-p').className='tab'+(m==='p'?' active':'');
+  document.getElementById('input-g').style.display=m==='g'?'flex':'none';
+  document.getElementById('input-p').style.display=m==='p'?'flex':'none';
+  calc();
+}
+
+function toggleAdv(){
+  var body=document.getElementById('adv-body');
+  var arrow=document.getElementById('adv-arrow');
+  var open=body.classList.toggle('open');
+  arrow.classList.toggle('open',open);
+}
+
+function toPer(val,unit,gpg){
+  if(unit==='100g') return val/100*gpg;
+  if(unit==='g') return val*gpg;
+  return val;
+}
+
+function calc(){
+  var gpg=parseFloat(document.getElementById('gpg').value)||12.5;
+  var lp=parseFloat(document.getElementById('lp').value);
+  var lu=document.getElementById('lu').value;
+  var lpp=toPer(lp,lu,gpg);
+  var opp;
+  if(mode==='g'){
+    var og=parseFloat(document.getElementById('og').value);
+    var ogp=parseFloat(document.getElementById('ogp').value);
+    if(isNaN(og)||isNaN(ogp)||og===0){showEmpty();return;}
+    opp=ogp/og*gpg;
+  } else {
+    var opc=parseFloat(document.getElementById('opc').value);
+    var opp2=parseFloat(document.getElementById('opp2').value);
+    if(isNaN(opc)||isNaN(opp2)||opc===0){showEmpty();return;}
+    opp=opp2/opc;
+  }
+  var diff=lpp-opp;
+  var l100=lpp/gpg*100;
+  var o100=opp/gpg*100;
+  var cls,vclass,verdict,diffTxt;
+  if(diff>0.5){
+    cls='res buy';vclass='buy';verdict='買い ✓';
+    diffTxt='直営より1粒あたり '+diff.toFixed(1)+' 円安い';
+  } else if(diff<-0.5){
+    cls='res pass';vclass='pass';verdict='割高';
+    diffTxt='直営より1粒あたり '+Math.abs(diff).toFixed(1)+' 円高い';
+  } else {
+    cls='res same';vclass='same';verdict='ほぼ同額';
+    diffTxt='直営と同じくらいの価格です';
+  }
+  var lbest=diff>0.5?'worse':'';
+  var obest=diff>0.5?'best':'';
+  document.getElementById('res').className=cls;
+  document.getElementById('res').innerHTML=
+    '<p class="res-verdict '+vclass+'">'+verdict+'</p>'
+    +'<p class="res-diff">'+diffTxt+'</p>'
+    +'<div class="res-grid">'
+    +'<div class="rc '+lbest+'"><p class="rl">直営 / 1粒</p><p class="rv">'+lpp.toFixed(0)+'円</p></div>'
+    +'<div class="rc '+obest+'"><p class="rl">他店 / 1粒</p><p class="rv">'+opp.toFixed(0)+'円</p></div>'
+    +'<div class="rc"><p class="rl">差額 / 1粒</p><p class="rv">'+(diff>0?'−':diff<0?'+':'')+Math.abs(diff).toFixed(0)+'円</p></div>'
+    +'<div class="rc '+lbest+'"><p class="rl">直営 / 100g</p><p class="rv">'+Math.round(l100)+'円</p></div>'
+    +'<div class="rc '+obest+'"><p class="rl">他店 / 100g</p><p class="rv">'+Math.round(o100)+'円</p></div>'
+    +'<div class="rc"><p class="rl">差額 / 100g</p><p class="rv">'+(diff>0?'−':diff<0?'+':'')+Math.abs(Math.round(l100-o100))+'円</p></div>'
+    +'</div>';
+}
+
+function showEmpty(){
+  document.getElementById('res').className='res';
+  document.getElementById('res').innerHTML='<p class="empty-hint">上に値段を入力すると判定が出ます</p>';
+}
+
+// 直営店設定変更時も再計算
+['lp','lu'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',calc);
+  document.getElementById(id).addEventListener('change',calc);
+});
+</script>
+</body>
+</html>
